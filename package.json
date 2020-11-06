@@ -1,0 +1,19 @@
+{
+  "name": "autofarmer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "init.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chinmayi-r/AutoFarmer.git"
+  },
+  "author": "Chinmayi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chinmayi-r/AutoFarmer/issues"
+  },
+  "homepage": "https://github.com/chinmayi-r/AutoFarmer#readme"
+}
