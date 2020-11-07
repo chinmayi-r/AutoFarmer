@@ -1,16 +1,9 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
 #
-# Author: Evan Juras
-# Date: 9/28/19
-# Description:
-# This program uses a TensorFlow Lite object detection model to perform object
-# detection on an image or a folder full of images. It draws boxes and scores
-# around the objects of interest in each image.
-#
 # This code is based off the TensorFlow Lite image classification example at:
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/examples/python/label_image.py
 #
-# I added my own method of drawing boxes and labels using OpenCV.
+# I added my own method of drawing boxes and labels using OpenCV. Also, moving robot, slider and dispenser
 
 # Import packages
 import os
@@ -21,24 +14,29 @@ import sys
 import glob
 import importlib.util
 
+#Chinmayi - TBD
 def take_pic():
 	print('Taking picture... - TBD')
 	return './test2.jpg'
 
+#Akaaknsh - TBD
 def robot_move(xy_arr):
 	print(xy_arr)
 	xy_arr_sorted = sorted(xy_arr, key=lambda k: [k[1],k[0]])
 	print(xy_arr_sorted)
-
+	
 	for coordinate in xy_arr_sorted:
-		print('Start Moving robot to coordinate ',coordinate)
+		print('Start Moving robot to coordinate ',coordinate[1])
+		##TBD - Code to move robot to the y-coordinate coordinate[1]
 		move_slider(coordinate)
 		dispense_weedicide()
 	return
 
-def move_slider(x_comp):
-	print('Moved slider to coordinate - TBD', x_comp)
+#Akaanksh - TBD
+def move_slider(coordinate):
+	print('Moved slider to x-coordinate - TBD', coordinate[0])	
 
+#Chinmayi - TBD	
 def dispense_weedicide():
 	print('Weedicide dispensed - TBD')
 	return
@@ -68,7 +66,7 @@ LABELMAP_NAME = args.labels
 min_conf_threshold = float(args.threshold)
 use_TPU = args.edgetpu
 
-# Parse input image name and directory.
+# Parse input image name and directory. 
 IM_NAME = args.image
 IM_DIR = args.imagedir
 
@@ -159,7 +157,7 @@ for image_path in images:
     # Load image and resize to expected shape [1xHxWx3]
     image = cv2.imread(image_path)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    imH, imW, _ = image.shape
+    imH, imW, _ = image.shape 
     image_resized = cv2.resize(image_rgb, (width, height))
     input_data = np.expand_dims(image_resized, axis=0)
 
@@ -178,9 +176,9 @@ for image_path in images:
     #num = interpreter.get_tensor(output_details[3]['index'])[0]  # Total number of detected objects (inaccurate and not needed)
 
     # Loop over all detections and draw detection box if confidence is above minimum threshold
-
+ 
     xy_arr=[]
-
+      
     for i in range(len(scores)):
         if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
@@ -192,10 +190,10 @@ for image_path in images:
             xmax = int(min(imW,(boxes[i][3] * imW)))
 
             xy_arr.append([int((xmin+xmax)/2),int((ymin+ymax)/2) ])
-
-
+            
+            
             cv2.rectangle(image, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2)
-
+            
 
             # Draw label
             object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
@@ -204,27 +202,27 @@ for image_path in images:
             label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
             cv2.rectangle(image, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
             cv2.putText(image, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
-
+    
     # All the results have been drawn on the image, now display the image
     cv2.imshow('Object detector', image)
-
+    
     # After displaying image, move robot to the locations bounded in the image
-    robot_move(xy_arr)
-
+    robot_move(xy_arr) 
+    
     # clean_quit = input('Press "q" to clean up and quit: ')
     # if str(clean_quit) == 'q':
 	    # cv2.destroyAllWindows()
 	    # quit()
 
-
+    
     # Press any key to continue to next image, or press 'q' to quit
     k = cv2.waitKey(0) & 0xFF
     if k == 27:
         break
-cv2.destroyWindow('Object detector')
+cv2.destroyWindow('Object detector')  
 cv2.destroyAllWindows()
-
-
+        
+    
 # Press 'q' to clean up and quit
 """clean_quit = input('Press "q" to clean up and quit: ')
 if str(clean_quit) == 'q':
