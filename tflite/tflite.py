@@ -1,8 +1,8 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
 #
-# Description: 
-# This program uses a TensorFlow Lite object detection model to perform object 
-# detection on an image or a folder full of images. It draws boxes and scores 
+# Description:
+# This program uses a TensorFlow Lite object detection model to perform object
+# detection on an image or a folder full of images. It draws boxes and scores
 # around the objects of interest in each image.
 #
 # This code is based off the TensorFlow Lite image classification example at:
@@ -19,13 +19,12 @@ import sys
 import glob
 import importlib.util
 from picamera import PiCamera
-import serial
-import time
+from time import sleep
 
 def take_pic():
     pic_path='./images/image.jpg'
     #camera.start_preview()
-    #time.sleep(5)
+    #sleep(5)
     #camera.capture(pic_path)
     print('Taking picture...')
     #camera.stop_preview()
@@ -37,59 +36,10 @@ def sort_arr(arr):
     print(arr_sorted)
     return arr_sorted
 
-def waitForArduino():
-	# wait until the Arduino sends 'Arduino Ready' - allows time for Arduino reset
-	# it also ensures that any bytes left over from a previous message are discarded
+def send_arr(arr):
+    print('Array sent to arduino')
+    return
 
-	msg = ""
-	while msg.find("Arduino is ready") == -1:
-		while ser.inWaiting() == 0:
-			pass
-		msg = recvFromArduino()
-		print(msg)
-		print()
-
-def sendToArduino(sendStr):
-	ser.write(sendStr)
-
-def recvFromArduino():
-
-	ck = ""
-	x = "z" # any value that is not an end- or startMarker
-	byteCount = -1 # to allow for the fact that the last increment will be one too many
-	# wait for the start character
-	while  ord(x) != startMarker:
-		x = ser.read()
-
-	# save data until the end marker is found
-	while ord(x) != endMarker:
-		if ord(x) != startMarker:
-			ck = ck + x
-			byteCount += 1
-			x = ser.read()
-	return(ck)
-
-def send_arr(td):
-    numLoops = len(td)
-    waitingForReply = False
-    n = 0
-    while n < numLoops:
-		teststr = td[n]
-		if waitingForReply == False:
-			teststr=str(teststr).replace(']','>').replace('[','<')
-			sendToArduino(teststr)
-			print("Sent from Raspberry Pi" + str(n) + "string: " + teststr)
-			waitingForReply = True
-		if waitingForReply == True:
-			while ser.inWaiting() == 0:
-				pass
-		dataRecvd = recvFromArduino()
-		print("Reply Received  " + dataRecvd)
-		n += 1
-		waitingForReply = False
-		print()
-		time.sleep(5)
-    
 def wait_for_reply():
 	return True
 
@@ -132,18 +82,7 @@ if use_TPU:
     # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
     if (GRAPH_NAME == 'detect.tflite'):
          GRAPH_NAME = 'edgetpu.tflite'
-serPort = "/dev/ttyACM1"
-baudRate = 9600
-ser = serial.Serial(serPort, baudRate)
-print("Serial port " + serPort + " opened  Baudrate " + str(baudRate))
 
-
-startMarker = 60
-endMarker = 62
-
-
-waitForArduino()
- 
 while True:
     IM_NAME = take_pic()
     # Get path to current working directory
@@ -193,7 +132,7 @@ while True:
         # Load image and resize to expected shape [1xHxWx3]
         image = cv2.imread(image_path)
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        imH, imW, _ = image.shape 
+        imH, imW, _ = image.shape
         image_resized = cv2.resize(image_rgb, (width, height))
         input_data = np.expand_dims(image_resized, axis=0)
 
@@ -212,9 +151,9 @@ while True:
         #num = interpreter.get_tensor(output_details[3]['index'])[0]  # Total number of detected objects (inaccurate and not needed)
 
         # Loop over all detections and draw detection box if confidence is above minimum threshold
-     
+
         xy_arr=[]
-          
+
         for i in range(len(scores)):
             if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
                 # Get bounding box coordinates and draw box
@@ -230,6 +169,15 @@ while True:
                     dispense_amt=0
 
                 xy_arr.append([int((xmin+xmax)/2),int((ymin+ymax)/2), dispense_amt])
+
         xy_arr_sorted=sort_arr(xy_arr)
         send_arr(xy_arr_sorted)
+        success=wait_for_reply()
+        if success:
+			print('dispensing successful')
+		else:
+			print('dispensing unsuccessful')
+
+
+
 
