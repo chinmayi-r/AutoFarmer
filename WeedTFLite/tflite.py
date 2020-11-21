@@ -18,17 +18,13 @@ import numpy as np
 import sys
 import glob
 import importlib.util
-from picamera import PiCamera
 import serial
 import time
+import os
 
 def take_pic():
     pic_path='./images/image.jpg'
-    #camera.start_preview()
-    #time.sleep(5)
-    #camera.capture(pic_path)
-    print('Taking picture...')
-    #camera.stop_preview()
+    os.system('fswebcam ~/tflite/images/image.jpg')
     return pic_path
 
 def sort_arr(arr):
@@ -36,62 +32,68 @@ def sort_arr(arr):
     arr_sorted = sorted(xy_arr, key=lambda k: [k[1],k[0]])
     print(arr_sorted)
     return arr_sorted
-
+    
 def waitForArduino():
-	# wait until the Arduino sends 'Arduino Ready' - allows time for Arduino reset
-	# it also ensures that any bytes left over from a previous message are discarded
 
-	msg = ""
-	while msg.find("Arduino is ready") == -1:
-		while ser.inWaiting() == 0:
-			pass
-		msg = recvFromArduino()
-		print(msg)
-		print()
+   # wait until the Arduino sends 'Arduino Ready' - allows time for Arduino reset
+   # it also ensures that any bytes left over from a previous message are discarded
 
+    msg = ""
+    while msg.find("Arduino is ready") == -1:
+
+      while ser.inWaiting() == 0:
+        pass
+
+      msg = recvFromArduino()
+
+      print(msg)
+      print()
+
+    
 def sendToArduino(sendStr):
-	ser.write(sendStr)
-
+    ser.write(sendStr)
+    
 def recvFromArduino():
 
-	ck = ""
-	x = "z" # any value that is not an end- or startMarker
-	byteCount = -1 # to allow for the fact that the last increment will be one too many
-	# wait for the start character
-	while  ord(x) != startMarker:
-		x = ser.read()
+  encoding = 'utf-8'
+  ck = ""
+  x = "z" # any value that is not an end- or startMarker
+  byteCount = -1 # to allow for the fact that the last increment will be one too many
 
-	# save data until the end marker is found
-	while ord(x) != endMarker:
-		if ord(x) != startMarker:
-			ck = ck + x
-			byteCount += 1
-			x = ser.read()
-	return(ck)
+  # wait for the start character
+  while  ord(x) != startMarker:
+    x = ser.read()
+
+  # save data until the end marker is found
+  while ord(x) != endMarker:
+    if ord(x) != startMarker:
+      ck = ck + str(x, encoding)
+      byteCount += 1
+    x = ser.read()
+
+  return(ck)
 
 def send_arr(td):
     numLoops = len(td)
     waitingForReply = False
     n = 0
     while n < numLoops:
-		teststr = td[n]
-		if waitingForReply == False:
-			teststr=str(teststr).replace(']','>').replace('[','<')
-			sendToArduino(teststr)
-			print("Sent from Raspberry Pi" + str(n) + "string: " + teststr)
-			waitingForReply = True
-		if waitingForReply == True:
-			while ser.inWaiting() == 0:
-				pass
-		dataRecvd = recvFromArduino()
-		print("Reply Received  " + dataRecvd)
-		n += 1
-		waitingForReply = False
-		print()
-		time.sleep(5)
-    
-def wait_for_reply():
-	return True
+        teststr = td[n]
+        if waitingForReply == False:
+            teststr=str(teststr).replace(']','>').replace('[','<')
+            teststr_encoded = str.encode(teststr)
+            sendToArduino(teststr_encoded)
+            print("Sent from Raspberry Pi" + str(n) + "string: " + teststr)
+            waitingForReply = True
+        if waitingForReply == True:
+            while ser.inWaiting() == 0:
+                pass
+        dataRecvd = recvFromArduino()
+        print("Reply Received  " + dataRecvd)
+        n += 1
+        waitingForReply = False
+        print()
+        time.sleep(5)
 
 # Define and parse input arguments
 parser = argparse.ArgumentParser()
@@ -132,7 +134,7 @@ if use_TPU:
     # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
     if (GRAPH_NAME == 'detect.tflite'):
          GRAPH_NAME = 'edgetpu.tflite'
-serPort = "/dev/ttyACM1"
+serPort = "/dev/ttyACM0"
 baudRate = 9600
 ser = serial.Serial(serPort, baudRate)
 print("Serial port " + serPort + " opened  Baudrate " + str(baudRate))
@@ -232,4 +234,5 @@ while True:
                 xy_arr.append([int((xmin+xmax)/2),int((ymin+ymax)/2), dispense_amt])
         xy_arr_sorted=sort_arr(xy_arr)
         send_arr(xy_arr_sorted)
+        
 
