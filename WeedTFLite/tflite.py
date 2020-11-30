@@ -20,7 +20,6 @@ import glob
 import importlib.util
 import serial
 import time
-import os
 
 def take_pic():
     pic_path='./images/image.jpg'
