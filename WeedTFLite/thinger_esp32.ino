@@ -12,8 +12,8 @@ DHTesp dht;
 #define DEVICE_ID "ESP32"
 #define DEVICE_CREDENTIAL "ESP_32"
 
-#define SSID "Redmi"
-#define SSID_PASSWORD "31415926"
+#define SSID "OnePlus 6T"
+#define SSID_PASSWORD "Chethana564"
 
 ThingerESP32 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
 
@@ -62,7 +62,7 @@ void loop() {
   Serial.print("Soil Moisture(in Percentage) = ");
   Serial.print((moisture_percentage*100));
   Serial.println("%");
-  thing["moisture"] >> outputValue( moisture_percentage*100);
+  thing["moisture"] >> outputValue(100-(moisture_percentage*100));
   thing["moistureindex"] >> outputValue(moisture_percentage);
 
   /////////////////////////////Reading temperature and humidity from DTH11/////////////////////////////
