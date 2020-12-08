@@ -1,7 +1,7 @@
 # Instructions for running the code for the AutoFarmer Robot
 
 <p align="center">
-   <img src="doc/AutoFarmer-robot-image.jpg">
+   <img src="doc/AutoFarmer_robot_image.jpg">
 </p>
 
 ## Introduction
