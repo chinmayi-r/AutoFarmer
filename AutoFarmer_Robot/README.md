@@ -1,4 +1,4 @@
-# Instructions for running the code for the AutoFarmer Robot
+# Running the code for the AutoFarmer Robot on a Raspberry Pi 4B
 
 <p align="center">
    <img src="doc/AutoFarmer_robot_image.jpg">
