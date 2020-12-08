@@ -1,14 +1,15 @@
-######## Webcam Object Detection Using Tensorflow-trained Classifier #########
+######## Webcam Weed Detection Using a Tensorflow Lite model on a Raspberry Pi #########
 #
 # Description:
 # This program uses a TensorFlow Lite object detection model to perform object
-# detection on an image or a folder full of images. It draws boxes and scores
+# detection on images taken live by the raspberry pi camera. It forms boxes and gives x and y coordinates and scores
 # around the objects of interest in each image.
+# Calculates how much weedicides to put on each weed seen in the image and sends this information along with the
+# x and y coordinates over serial communication to a arduino that controls the motors and the the weedicide dispencing mechanism
 #
 # This code is based off the TensorFlow Lite image classification example at:
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/examples/python/label_image.py
-#
-# I added my own method of drawing boxes and labels using OpenCV.
+
 
 # Import packages
 import os
@@ -18,30 +19,85 @@ import numpy as np
 import sys
 import glob
 import importlib.util
-from picamera import PiCamera
-from time import sleep
+import serial
+import time
 
 def take_pic():
     pic_path='./images/image.jpg'
-    #camera.start_preview()
-    #sleep(5)
-    #camera.capture(pic_path)
-    print('Taking picture...')
-    #camera.stop_preview()
+    os.system('fswebcam ~/tflite/images/image.jpg')
     return pic_path
 
 def sort_arr(arr):
+
+    # sorts x and y coordinates of weeds in acsending order so that the robot does not need to waste energy
+    # moving back and forth
+
     print(arr)
     arr_sorted = sorted(xy_arr, key=lambda k: [k[1],k[0]])
     print(arr_sorted)
     return arr_sorted
 
-def send_arr(arr):
-    print('Array sent to arduino')
-    return
+def waitForArduino():
 
-def wait_for_reply():
-	return True
+   # wait until the Arduino sends 'Arduino Ready' - allows time for Arduino reset
+   # it also ensures that any bytes left over from a previous message are discarded
+
+    msg = ""
+    while msg.find("Arduino is ready") == -1:
+
+      while ser.inWaiting() == 0:
+        pass
+
+      msg = recvFromArduino()
+
+      print(msg)
+      print()
+
+
+def sendToArduino(sendStr):
+    ser.write(sendStr)
+
+def recvFromArduino():
+
+  encoding = 'utf-8'
+  ck = ""
+  x = "" # message from arduino to be reieved here
+  byteCount = -1 # to allow for the fact that the last increment will be one too many
+
+  # wait for the start character
+  while  ord(x) != startMarker:
+    x = ser.read()
+
+  # save data until the end marker is found
+  while ord(x) != endMarker:
+    if ord(x) != startMarker:
+      ck = ck + str(x, encoding)
+      byteCount += 1
+    x = ser.read()
+
+  return(ck)
+
+def send_arr(td):
+    numLoops = len(td)
+    waitingForReply = False
+    n = 0
+    while n < numLoops:
+        teststr = td[n]
+        if waitingForReply == False:
+            teststr=str(teststr).replace(']','>').replace('[','<')
+            teststr_encoded = str.encode(teststr)
+            sendToArduino(teststr_encoded)
+            print("Sent from Raspberry Pi" + str(n) + "string: " + teststr)
+            waitingForReply = True
+        if waitingForReply == True:
+            while ser.inWaiting() == 0:
+                pass
+        dataRecvd = recvFromArduino()
+        print("Reply Received  " + dataRecvd)
+        n += 1
+        waitingForReply = False
+        print()
+        time.sleep(5)
 
 # Define and parse input arguments
 parser = argparse.ArgumentParser()
@@ -64,6 +120,9 @@ LABELMAP_NAME = args.labels
 min_conf_threshold = float(args.threshold)
 use_TPU = args.edgetpu
 
+serPort = "/dev/ttyACM0"        # Serial port of arduino
+baudRate = 9600                 # baudRate of communication with the arduino
+
 # Import TensorFlow libraries
 # If tflite_runtime is installed, import interpreter from tflite_runtime, else import from regular tensorflow
 # If using Coral Edge TPU, import the load_delegate library
@@ -83,6 +142,16 @@ if use_TPU:
     if (GRAPH_NAME == 'detect.tflite'):
          GRAPH_NAME = 'edgetpu.tflite'
 
+ser = serial.Serial(serPort, baudRate)
+print("Serial port " + serPort + " opened  Baudrate " + str(baudRate))
+
+
+startMarker = 60        # Encoding for '<', which is the start marker of a message
+endMarker = 62          # Encoding for '>', which is the end marker of a message
+
+
+waitForArduino()
+
 while True:
     IM_NAME = take_pic()
     # Get path to current working directory
@@ -98,12 +167,6 @@ while True:
     # Load the label map
     with open(PATH_TO_LABELS, 'r') as f:
         labels = [line.strip() for line in f.readlines()]
-
-    # Have to do a weird fix for label map if using the COCO "starter model" from
-    # https://www.tensorflow.org/lite/models/object_detection/overview
-    # First label is '???', which has to be removed.
-    if labels[0] == '???':
-        del(labels[0])
 
     # Load the Tensorflow Lite model.
     # If using Edge TPU, use special load_delegate argument
@@ -169,15 +232,6 @@ while True:
                     dispense_amt=0
 
                 xy_arr.append([int((xmin+xmax)/2),int((ymin+ymax)/2), dispense_amt])
-
         xy_arr_sorted=sort_arr(xy_arr)
+        xy_arr_sorted.append('done')
         send_arr(xy_arr_sorted)
-        success=wait_for_reply()
-        if success:
-			print('dispensing successful')
-		else:
-			print('dispensing unsuccessful')
-
-
-
-
