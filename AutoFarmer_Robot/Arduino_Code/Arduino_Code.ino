@@ -1,13 +1,14 @@
+//defining the rotary encoder pins
 #define enc1 2 
 #define enc2 3
 #define enc3 18
 #define enc4 19
 
-const int dir =  4;
-const int ste  = 5;
+const int dir =  4; //the direction pin for the stepper motor
+const int ste  = 5; //the step pin for the stepper motor
 
-#define onerev 1890
-#define steps_per_rev 200
+#define onerev 1890 //the number of ticks in one rotation of the johnson geared motor
+#define steps_per_rev 200 //the number of steps it takes for the stepper motor to complete one whole revoltion
 
 volatile long enc_val1 = 0;
 volatile long enc_val2 = 0;
@@ -38,8 +39,9 @@ unsigned long replyToPCinterval = 1000;
 
 void setup()
 {
-    Serial.begin(9600);
-
+    Serial.begin(9600); //beginning the serial communication with the raspberry pi
+    
+    //declaring the pin modes
     pinMode(dir, OUTPUT);
     pinMode(ste, OUTPUT);
 
@@ -53,6 +55,7 @@ void setup()
     pinMode(enc3, INPUT_PULLUP);
     pinMode(enc4, INPUT_PULLUP);
 
+    //declaring the rotary encoders as interrupts
     attachInterrupt(digitalPinToInterrupt(enc1), updenc1, FALLING);
     attachInterrupt(digitalPinToInterrupt(enc2), updenc2, FALLING);
     attachInterrupt(digitalPinToInterrupt(enc3), updenc3, FALLING);
@@ -62,7 +65,7 @@ void setup()
     Serial.println("<Arduino is ready>");
 }
 
-void forward(int pixels)
+void forward(int pixels) //function to make the robot move forward given the number of pixles the camera sees
 {
     enc_val1 = 0;
     enc_val2 = 0;
@@ -78,9 +81,9 @@ void forward(int pixels)
     digitalWrite(28, HIGH);
     digitalWrite(29, LOW);
 
-    int mm = map(pixels, 0, 480, 0 , 200);
+    int mm = map(pixels, 0, 480, 0 , 200); //Converts the pixel data to the mm it has to move
 
-    int required = (int)((((float)onerev) / ((float)330)) * (float)(mm));
+    int required = (int)((((float)onerev) / ((float)330)) * (float)(mm)); //Convert the mm to the required number of rotary encoder ticks
     while(1)
     {
         if(enc_state[0] && enc_state[1] && enc_state[2] && enc_state[3])
@@ -139,7 +142,7 @@ void updenc4()
     enc_val4++; 
 }
 
-void step(int pix, int we)
+void step(int pix, int we) //function to rotate the stepper motor to make the dispensing mechanism move to the right position and then dispense the amount of weedicide based on the plant type recognised by the raspberry pi
 {
     map(pix, 0, 640, 0, 290);
     mm = pix;
@@ -162,7 +165,7 @@ void step(int pix, int we)
 
     int revolutions = (mm / 10) * 1.25;
 
-    for(int i = 0; i < (revolutions * steps_per_rev); i++)
+    for(int i = 0; i < (revolutions * steps_per_rev); i++) //step the stepper motor to the required position from the centre
     {
         digitalWrite(ste, HIGH);
         delayMicroseconds(400);
@@ -179,7 +182,7 @@ void step(int pix, int we)
     else
         digitalWrite(dir, LOW);
 
-    for(int i = 0; i < (revolutions * steps_per_rev); i++)
+    for(int i = 0; i < (revolutions * steps_per_rev); i++) //make the mechanism move back to the centre
     {
         digitalWrite(ste, HIGH);
         delayMicroseconds(400);
@@ -262,7 +265,7 @@ void replyToPC()
   }
 }
 
-void gotoend()
+void gotoend() //make the robot move to the require positions so that it can take the next picture perfectly
 {
     forward(480 - yval);
 }
