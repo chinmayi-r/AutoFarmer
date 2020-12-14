@@ -18,12 +18,15 @@ DHTesp dht;
 ThingerESP32 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
 
 const int sensor_pin = 34;
+const int sensor_pin2 = 33;
+const int rain_pin = 18;
 float moisture_percentage = 0;
 float humidity = 0;
 float temperature = 0;
 int ssm = 0;
 float moisture = 0.0;
 int httpCode=0;
+bool raining= false
 
 int MOTOR = 2;
 int THINGSWITCH = 4;
@@ -31,11 +34,13 @@ int httpCounter = 0;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(sensor_pin, INPUT);
+  pinMode(sensor_pin, INPUT);
+  pinMode(rain_pin, INPUT);
   Serial.begin(9600);
   delay(8000);
 
   thing.add_wifi(SSID, SSID_PASSWORD);
-  pinMode(THINGSWITCH, INPUT);
   pinMode(THINGSWITCH, OUTPUT);
 
   // digital pin control example (i.e. turning on/off a light, a relay, configuring a parameter, etc)
@@ -56,14 +61,20 @@ void setup() {
 
 void loop() {
 
- /////////////////////////////////REading moisture data from Soil moisture sensor//////////////////////////
-  moisture_percentage = (analogRead(sensor_pin)/1023.00);
+ /////////////////////////////////REading moisture data from Soil moisture sensors//////////////////////////
+  moisture_percentage = (((analogRead(sensor_pin)/1023.00)+(analogRead(sensor_pin2)/1023.00))/2);
 
   Serial.print("Soil Moisture(in Percentage) = ");
   Serial.print((moisture_percentage*100));
   Serial.println("%");
   thing["moisture"] >> outputValue(100-(moisture_percentage*100));
   thing["moistureindex"] >> outputValue(moisture_percentage);
+  
+  
+ /////////////////////////////////REading moisture data from Rain sensor//////////////////////////
+  raining = digitalRead(rain_pin);
+  Serial.print("Raining: ");
+  Serial.println(raining);
 
   /////////////////////////////Reading temperature and humidity from DTH11/////////////////////////////
 
@@ -138,16 +149,22 @@ void loop() {
   }
   if(moisture < 0.1) //blink LED later start motor
     {
-      Serial.println("Moisture level low. Switching motor on");
+      Serial.println("Humidity low. Switching motor on");
       digitalWrite(MOTOR, HIGH); // turn the LED on
       thing["motorstatus"] >> outputValue(1);
     }
-    else
-    {
-      Serial.println("Moisture level high. Switching motor off");
-      digitalWrite(MOTOR, LOW); // turn the LED off
-      thing["motorstatus"] >> outputValue(0);
-    }
+  elif(raining)
+  {
+    Serial.println("Raining. Switching motor off");
+    digitalWrite(MOTOR, LOW); // turn the LED off
+    thing["motorstatus"] >> outputValue(0);
+    
+  else
+  {
+    Serial.println("Moisture level high. Switching motor off");
+    digitalWrite(MOTOR, LOW); // turn the LED off
+    thing["motorstatus"] >> outputValue(0);
+  }
  
 
   delay(2000);
