@@ -1,5 +1,9 @@
 # Running the code for the AutoFarmer Robot on a Raspberry Pi 4B
 
+<p align="center">
+   <img src="doc/robot.png">
+</p>
+
 ## Introduction
 Our robot has two parts:
 1. A raspberry pi 4B that does all the processing for the robot. It takes pictures of the crop the robot is placed over, and searches the picture for weeds using a TensorFlow Lite machine learning model. TensorFlow Lite is an optimized framework for deploying lightweight deep learning models on resource-constrained edge devices. TensorFlow Lite models have faster inference time and require less processing power, so they can be used to obtain faster performance in realtime applications. It identifies the exact coordinates of each of the weeds in the picture and relays this information to the arduino over serial communication. It also identifies the type of weed and calculates the exact amount of weedicide to be sprayed on it so that too much is not dispenced. This makes sure that the soil does not turn acidic. This is not possible using the present method of dispencing weedicides, where the farmer sprays the weeedicide evenly over the field. The farmer may spray more weedicide than required and destroy the fertility of his soil.
